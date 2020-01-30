@@ -5,15 +5,12 @@ const mongoose = require('mongoose');
 const MONGODB_URI = require('./env/mongoose');
 const multer = require('multer');
 
+const graphqlHttp = require('express-graphql');
+const graphqlSchema = require('./graphql/schema');
+const graphqlResolver = require('./graphql/resolvers');
+
+
 const bodyParser = require('body-parser');
-// const fileStorage = multer.diskStorage({
-//     destination: (req,res,cb) => {
-//         cb(null, 'images');
-//     },
-//     filename: (req,res,cb) => {
-//         cb(null, new Date().toISOString() + '-' + file.originalname)
-//     }
-// })
 const uuidv4 = require('uuid/v4')
  
 const fileStorage = multer.diskStorage({
@@ -37,9 +34,6 @@ const fileFilter = (req,file,cb) => {
     }
 };
 
-const feedRoutes = require('./routes/feed');
-const authRoutes = require('./routes/auth');
-
 app.get('/favicon.ico', (req, res) => res.status(204));
 app.use(bodyParser.json()); 
 app.use(multer({storage:fileStorage, fileFilter: fileFilter}).single('image'));
@@ -52,8 +46,12 @@ app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     next();
 });
-app.use('/feed', feedRoutes);
-app.use('/auth', authRoutes);
+
+app.use('/graphql', graphqlHttp({
+    schema: graphqlSchema,
+    rootValue: graphqlResolver,
+    graphiql:true
+}));
 
 app.use((error,req,res,next) => {
     //for developer
@@ -69,11 +67,7 @@ app.use((error,req,res,next) => {
 
 mongoose.connect(MONGODB_URI)
 .then(result => {
-    const server = app.listen(8080);
-    const io = require('./socket').init(server);
-    io.on('connection',socket => {
-        console.log('Client connected');
-    });
+    app.listen(8080);
 })
 .catch(err => {
     console.log(err);
