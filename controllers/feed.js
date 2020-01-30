@@ -3,6 +3,7 @@ const path = require('path');
 
 const {validationResult} = require('express-validator/check');
 
+const io = require('../socket')
 const Post = require('../models/post');
 const User = require('../models/user');
 
@@ -14,6 +15,7 @@ exports.getPosts = async (req, res, next) => {
   try {
     const totalItems = await Post.find().countDocuments()
     const posts = await Post.find()
+                        .populate('creator')
                         .skip((currentPage-1) * perPage)
                         .limit(perPage);
 
@@ -53,6 +55,7 @@ exports.createPost = async (req, res, next) => {
       const creator = await User.findById(req.userId);
       creator.posts.push(post); //mongoose will extract the id and populate
       await creator.save();
+      io.getIO().emit('posts',{ action:'create', post: post })
       res.status(201).json({
           message: 'Post created successfully!',
           post: post,
@@ -71,7 +74,7 @@ exports.getPost = async (req,res,next) => {
   const postId = req.params.postId;
 
   try{
-    const post = await Post.findById({_id: postId})
+    const post = await Post.findById({_id: postId}).populate('creator');
     if(!post){
       const error = new Error('Could not find post');
       error.statusCode = 404;
