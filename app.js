@@ -14,7 +14,7 @@ const auth = require('./middleware/is-auth');
 
 const bodyParser = require('body-parser');
 const uuidv4 = require('uuid/v4')
- 
+const {clearImage} = require('./util/file');
 
 const fileStorage = multer.diskStorage({
     destination: function(req, file, cb) {
@@ -48,7 +48,7 @@ app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Methods', 'OPTIONS, GET, POST, PUT, PATCH, DELETE');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     if (req.method === 'OPTIONS'){
-        return res.status(200);
+        return res.sendStatus(200)
     }
     next();
 });
@@ -109,7 +109,3 @@ mongoose.connect(MONGODB_URI)
     console.log(err);
 });
 
-const clearImage = filePath => {
-    filePath = path.join(__dirname, '..', filePath);
-    fs.unlink(filePath, err => console.log(err));
-  };
