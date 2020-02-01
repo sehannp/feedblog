@@ -209,6 +209,11 @@ module.exports = {
       throw error;
     }
     const post = await Post.findById(id);
+    if(!post){
+      const error = new Error('No post found');
+      error.code = 404;
+      throw error;
+    }
     // not populating so, creator is the id
     if(post.creator.toString() !== req.userId.toString()){
       const error = new Error('Not Authorized');
@@ -229,5 +234,37 @@ module.exports = {
       console.log(err);
       return false;
     }
+  },
+
+  user: async function(args,req){
+    if (!req.isAuth){
+      const error = new Error('Not Authenticated');
+      error.code = 401;
+      throw error;
+    }
+    const user = await User.findById(req.userId);
+    if(!user){
+      const error = new Error('No user found');
+      error.code = 404;
+      throw error;
+    }    
+    return {...user._doc, _id:user._id.toString()};
+  },
+
+  updateStatus: async function({status},req){
+    if (!req.isAuth){
+      const error = new Error('Not Authenticated');
+      error.code = 401;
+      throw error;
+    }
+    const user = await User.findById(req.userId);
+    if(!user){
+      const error = new Error('No user found');
+      error.code = 404;
+      throw error;
+    } 
+    user.status = status;
+    await user.save();
+    return {...user._doc, _id:user._id.toString()}; 
   }
 };
